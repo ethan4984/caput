@@ -50,7 +50,7 @@ always @(posedge CLK) begin
 		upper_bound <= IP + CACHE_SIZE * INSTR_SIZE;
 		cache_index <= 0;
 
-		`MMU_READ(D1, 4, BURST_INCR, TRANSFER_SIZE_WORD);
+		`MMU_READ(D1, 4, BURST_WRAP4, TRANSFER_SIZE_WORD);
 	end 
 end
 
@@ -64,6 +64,7 @@ end
 
 always @(posedge CLK) begin
 	if(RSTN) begin
+		D1_ADDR <= 10000;
 		lower_bound <= 32'b0;
 		upper_bound <= 32'b0;
 	end

@@ -84,8 +84,8 @@ assign addr = `MMU_DRIVE_SIGNAL(2'b01) ? D1_ADDR :
 assign write_data = (`MMU_DRIVE_SIGNAL(2'b01)) ? D1_WRITE_DATA :
 	(`MMU_DRIVE_SIGNAL(2'b10) ? D2_WRITE_DATA : 32'd0);
 
-assign D1_READ_DATA = `MMU_DRIVE_SIGNAL(2'b01) ? read_data : D1_READ_DATA;
-assign D2_READ_DATA = `MMU_DRIVE_SIGNAL(2'b10) ? read_data : D2_READ_DATA;
+assign D1_READ_DATA = `MMU_DRIVE_SIGNAL(2'b01) ? read_data : 32'b0;
+assign D2_READ_DATA = `MMU_DRIVE_SIGNAL(2'b10) ? read_data : 32'b0;
 
 assign write = `MMU_DRIVE_SIGNAL(2'b01) ? D1_WRITE :
 	(`MMU_DRIVE_SIGNAL(2'b10) ? D2_WRITE : 1'd0);
@@ -100,7 +100,7 @@ assign D2_READYOUT = `MMU_DRIVE_SIGNAL(2'b10) ? readyout : 1'b1;
 assign D1_RESP = `MMU_DRIVE_SIGNAL(2'b01) ? resp : 1'b0;
 assign D2_RESP = `MMU_DRIVE_SIGNAL(2'b10) ? resp : 1'b0;
 
-assign selx = addr < 32'h100;
+assign selx = current_driver ? (addr < 32'h100) : 1'b0;
 assign seldef = addr > 32'h100;
 
 assign waiters = (D1_CLAIM << 0) | (D2_CLAIM << 1);
@@ -130,6 +130,12 @@ always @(posedge CLK) begin
 		if(!waiters) begin
 			current_driver <= 2'b0;
 		end
+	end
+end
+
+always @(posedge CLK) begin
+	if(RSTN) begin
+		current_driver <= 0;
 	end
 end
 
