@@ -1,6 +1,9 @@
 `include "pipeline/decode.svh"
 `include "mmu/operation.svh"
 
+//	operation:
+//		Consult the icache with an IP
+
 module icache # (
 	INSTR_SIZE = 32,
 	CACHE_SIZE = 32
@@ -26,23 +29,26 @@ import mmu_pkg::*;
 
 logic mmu_ready;
 logic mmu_processing;
-logic mmu_transfer_complete;
 
 assign mmu_ready = D1_READYOUT && !D1_RESP;
 assign mmu_processing = !D1_READYOUT && !D1_RESP;
-assign mmu_transfer_complete = 1'b0;
 
 logic [INSTR_SIZE-1:0] instr_cache [0:CACHE_SIZE-1];
 logic [$clog2(INSTR_SIZE)-1:0] cache_index;
+logic [$clog2(INSTR_SIZE)-1:0] instr_index;
 
 logic stage_flush;
+logic stage_read;
 logic stage_fetch;
 
 logic [31:0] lower_bound;
 logic [31:0] upper_bound;
 
 assign stage_flush = !((lower_bound <= IP) && (upper_bound >= IP)) && mmu_ready && !RSTN;
-assign stage_fetch = !stage_flush && mmu_processing && !RSTN;
+assign stage_read = !stage_flush && mmu_processing && !RSTN;
+assign stage_fetch = 1'b1;
+
+assign instr_index = (IP - lower_bound) >> 2;
 
 always @(posedge CLK) begin
 	if(stage_flush) begin
@@ -55,10 +61,17 @@ always @(posedge CLK) begin
 end
 
 always @(posedge CLK) begin
-	if(stage_fetch) begin
-		$display("%x", D1_READ_DATA);
+	if(stage_read) begin
 		instr_cache[cache_index] <= D1_READ_DATA;
 		cache_index <= cache_index + 1;
+	end
+end
+
+always @(posedge CLK) begin
+	if(stage_fetch) begin
+		INSTR <= instr_cache [instr_index];
+	end else begin
+
 	end
 end
 
